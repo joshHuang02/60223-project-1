@@ -1,4 +1,5 @@
 #include <Servo.h>
+#include <LiquidCrystal_I2C.h>
 
 // pins
 #define backLight 13
@@ -18,6 +19,8 @@ const float waterHigh = 30;
 const float waterLow = 0;
 
 Servo servo;
+LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x3F for a 16 chars and 2 line display
+
 int photoVal = 0;
 float currentVol = 0;
 int state = 0;
@@ -26,6 +29,7 @@ long fillTime = 0;
 long drainTime = 0;
 
 long lastLoopTime = 0;
+long lastLCDtime = 0;
 
 void setup() {
   servo.attach(SERVO);
@@ -35,6 +39,10 @@ void setup() {
   pinMode(btnDrain, INPUT);
   pinMode(pumpFill, OUTPUT);
   pinMode(pumpDrain, OUTPUT);
+
+  lcd.init();
+  lcd.clear();         
+  lcd.backlight();      // Make sure backlight is on
 
   Serial.begin(9600);
   delay(500); // wait for servo to reset
@@ -113,6 +121,7 @@ void loop() {
 
   // calculate current volume as sum of filled and drained volume, assume begin at 0
   currentVol = (float)(fillTime - drainTime) / 1000;
+  displayVolume(targetVol, currentVol);
 
   if (debug || true) {
     Serial.print(targetVol);
@@ -122,6 +131,17 @@ void loop() {
 
   // record the time when this loop ends so we can get duration between this loop and last loop
   lastLoopTime = millis();
+}
+
+void displayVolume(float targetVol, float currentVol) {
+  if (millis() > lastLCDtime + 300) {
+    lcd.setCursor(0,0);   //Set cursor to character 2 on line 0
+    lcd.print("Target : Current");
+    lcd.setCursor(0,1);   //Move cursor to character 2 on line 1
+    lcd.print(String(targetVol) + "  : " + String(currentVol));
+    lastLCDtime = millis();
+  }
+  
 }
 
 // same map function except this one returns floats
