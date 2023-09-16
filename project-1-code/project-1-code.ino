@@ -10,16 +10,14 @@
 //consts
 const bool debug = false;
 
-const float photoHigh = 980;
-const float photoLow = 720;
+const float photoHigh = 1000;
+const float photoLow = 690;
 const float waterHigh = 10;
 const float waterLow = 0;
 
 Servo servo;
 int photoVal = 0;
-int fillCnt = 0;
-int drainCnt = 0;
-float currentVol = 5;
+float currentVol = 0;
 int state = 0;
 int prevState = 0;
 long fillTime = 0;
@@ -39,13 +37,16 @@ void setup() {
 }
 
 void loop() {
-  photoVal = analogRead(photoRes);
   delay(100);
-  //plan is to map light values to volume of water and map volume of water to time needed
+  photoVal = analogRead(photoRes);
+
+  // calcualate target volume by mapping light value to some volume
   float targetVol = mapfloat(photoVal, photoLow, photoHigh, waterLow, waterHigh);
 
+  // calcualte the difference between current volume and target volume
   float volDiff = targetVol - currentVol;
-  if (abs(volDiff) < 0.5) {
+
+  if (abs(volDiff) < 0.7) { // volumes are close enough, no pumping
     // do nothing
     if (debug) {
       Serial.print(photoVal);
@@ -54,7 +55,7 @@ void loop() {
     }
     servo.write(50);
     
-  } else if (volDiff > 0) {
+  } else if (volDiff > 0) { // current below target, fill
     // fill
     if (debug) {
       Serial.print(photoVal);
@@ -64,7 +65,7 @@ void loop() {
 
     servo.write(65);
     
-  } else if (volDiff < 0) {
+  } else if (volDiff < 0) { // current above target, drain
     // drain
     if (debug) {
       Serial.print(photoVal);
@@ -77,35 +78,43 @@ void loop() {
     Serial.println("Unexpected Error");
   }
 
+  // set which state the pump should be in based on buttons 
   if (digitalRead(btnFill)) {
-    state = 1;
+    state = 1; // fill
   } else if (digitalRead(btnDrain)) {
-    state = 2;
+    state = 2; // drain
   } else {
-    state = 0;
+    state = 0; // do nothing
   }
-
-  // if (state != prevState) resetTimer();
 
   // based on which state the pump is in, get total time pumped in each state
   switch (state) {
     case 1: // fill
-      // make pump fill
+      // TODO make pump fill
       fillTime += millis() - lastLoopTime; // essentially add up time each time loop() happens
       break;
     case 2: //drain
-      fillTime += millis() - lastLoopTime;
+      // TODO make pump drain
+      drainTime += millis() - lastLoopTime;
       break;
     default:
       break; // nothing happens
   }
 
-  Serial.print(fillTime);
-  Serial.print(" : ");
-  Serial.println(drainTime);
+  // calculate current volume as sum of filled and drained volume, assume begin at 0
+  currentVol = (float)(fillTime - drainTime) / 1000;
+
+  if (debug || true) {
+    Serial.print(targetVol);
+    Serial.print(" : ");
+    Serial.println(currentVol);
+  }
+
+  // record the time when this loop ends so we can get duration between this loop and last loop
   lastLoopTime = millis();
 }
 
+// same map function except this one returns floats
 float mapfloat(float x, float in_min, float in_max, float out_min, float out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
