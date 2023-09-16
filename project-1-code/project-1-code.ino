@@ -2,6 +2,8 @@
 
 // pins
 #define backLight 13
+#define pumpFill 9
+#define pumpDrain 10
 #define btnFill 6
 #define btnDrain 7
 #define SERVO 3
@@ -12,7 +14,7 @@ const bool debug = false;
 
 const float photoHigh = 1000;
 const float photoLow = 690;
-const float waterHigh = 10;
+const float waterHigh = 30;
 const float waterLow = 0;
 
 Servo servo;
@@ -31,6 +33,8 @@ void setup() {
   pinMode(photoRes, INPUT);
   pinMode(btnFill, INPUT);
   pinMode(btnDrain, INPUT);
+  pinMode(pumpFill, OUTPUT);
+  pinMode(pumpDrain, OUTPUT);
 
   Serial.begin(9600);
   delay(500); // wait for servo to reset
@@ -46,7 +50,7 @@ void loop() {
   // calcualte the difference between current volume and target volume
   float volDiff = targetVol - currentVol;
 
-  if (abs(volDiff) < 0.7) { // volumes are close enough, no pumping
+  if (abs(volDiff) < 2.5) { // volumes are close enough, no pumping
     // do nothing
     if (debug) {
       Serial.print(photoVal);
@@ -91,13 +95,19 @@ void loop() {
   switch (state) {
     case 1: // fill
       // TODO make pump fill
+      digitalWrite(pumpFill, HIGH);
+      digitalWrite(pumpDrain, LOW);
       fillTime += millis() - lastLoopTime; // essentially add up time each time loop() happens
       break;
     case 2: //drain
       // TODO make pump drain
+      digitalWrite(pumpFill, LOW);
+      digitalWrite(pumpDrain, HIGH);
       drainTime += millis() - lastLoopTime;
       break;
     default:
+      digitalWrite(pumpFill, LOW);
+      digitalWrite(pumpDrain, LOW);
       break; // nothing happens
   }
 
