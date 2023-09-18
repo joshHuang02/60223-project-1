@@ -12,9 +12,9 @@
 
 //consts
 const bool debug = false;
-
-const float photoHigh = 1000;
-const float photoLow = 690;
+const float volError = 1.5;
+const float photoHigh = 1023;
+const float photoLow = 650;
 const float waterHigh = 30;
 const float waterLow = 0;
 
@@ -45,6 +45,7 @@ void setup() {
   lcd.backlight();      // Make sure backlight is on
 
   Serial.begin(9600);
+  servo.write(50);
   delay(500); // wait for servo to reset
 }
 
@@ -58,7 +59,7 @@ void loop() {
   // calcualte the difference between current volume and target volume
   float volDiff = targetVol - currentVol;
 
-  if (abs(volDiff) < 2.5) { // volumes are close enough, no pumping
+  if (abs(volDiff) < volError) { // volumes are close enough, no pumping
     // do nothing
     if (debug) {
       Serial.print(photoVal);
