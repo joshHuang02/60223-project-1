@@ -124,7 +124,7 @@ void loop() {
   currentVol = (float)(fillTime - drainTime) / 1000;
   displayVolume(targetVol, currentVol);
 
-  if (debug || true) {
+  if (debug) {
     Serial.print(targetVol);
     Serial.print(" : ");
     Serial.println(currentVol);
